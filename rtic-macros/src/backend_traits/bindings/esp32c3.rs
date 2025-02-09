@@ -195,6 +195,7 @@ mod esp32c3 {
         )]
     }
 
+    // ZAK NOTE: this implementation specific item should be inside the wrap task execution binding
     pub fn async_entry(
         _app: &App,
         _analysis: &CodegenAnalysis,

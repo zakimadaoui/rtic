@@ -1,16 +1,11 @@
 use crate::syntax::ast::App;
-use crate::{
-    analyze::Analysis,
-    codegen::{
-        bindings::{async_entry, handler_config, interrupt_entry, interrupt_exit, interrupt_mod},
-        util,
-    },
-};
+use crate::BackendBindings;
+use crate::{analyze::Analysis, codegen::util};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 /// Generates task dispatchers
-pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> TokenStream2 {
     let mut items = vec![];
 
     let interrupts = &analysis.interrupts;
@@ -36,7 +31,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
         };
 
         let pend_interrupt = if level > 0 {
-            let int_mod = interrupt_mod(app);
+            let int_mod = bindings.sw.interrupt_path(app);
 
             quote!(rtic::export::pend(#int_mod::#dispatcher_name);)
         } else {
@@ -66,10 +61,16 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
         if level > 0 {
             let doc = format!("Interrupt handler to dispatch async tasks at priority {level}");
             let attribute = &interrupts.get(&level).expect("UNREACHABLE").1.attrs;
-            let entry_stmts = interrupt_entry(app, analysis);
-            let exit_stmts = interrupt_exit(app, analysis);
-            let async_entry_stmts = async_entry(app, analysis, dispatcher_name.clone());
-            let config = handler_config(app, analysis, dispatcher_name.clone());
+            let entry_stmts = bindings.sw.interrupt_entry_statements(
+                app,
+                analysis,
+                Some(dispatcher_name.clone()),
+            );
+            let exit_stmts = bindings.sw.interrupt_exit_statements(app, analysis, None);
+            let config =
+                bindings
+                    .sw
+                    .interrupt_handler_config(app, analysis, dispatcher_name.clone());
             items.push(quote!(
                 #[allow(non_snake_case)]
                 #[doc = #doc]
@@ -77,8 +78,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
                 #(#attribute)*
                 #(#config)*
                 unsafe fn #dispatcher_name() {
-                    #(#entry_stmts)*
-                    #(#async_entry_stmts)*
+                    #entry_stmts
 
                     /// The priority of this interrupt handler
                     const PRIORITY: u8 = #level;
@@ -87,7 +87,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
                         #(#stmts)*
                     });
 
-                    #(#exit_stmts)*
+                    #exit_stmts
                 }
             ));
         } else {

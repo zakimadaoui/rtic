@@ -1,9 +1,9 @@
-use crate::{analyze::Analysis, codegen::util, syntax::ast::App};
+use crate::{analyze::Analysis, codegen::util, syntax::ast::App, BackendBindings};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 /// Generates code that runs after `#[init]` returns
-pub fn codegen(app: &App, analysis: &Analysis) -> Vec<TokenStream2> {
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> Vec<TokenStream2> {
     let mut stmts = vec![];
 
     // Initialize shared resources
@@ -39,9 +39,16 @@ pub fn codegen(app: &App, analysis: &Analysis) -> Vec<TokenStream2> {
             ));
         }
     }
+    
+    if let Some(post_init) = bindings.core.post_init(app, analysis) {
+        stmts.push(post_init);
+    }
 
+    // TODO: replace this with a binding for enabling interrupts
     // Enable the interrupts -- this completes the `init`-ialization phase
+    // or ask this to be part of `post_init` binding
     stmts.push(quote!(rtic::export::interrupt::enable();));
+
 
     stmts
 }

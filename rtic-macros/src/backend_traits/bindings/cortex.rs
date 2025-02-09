@@ -209,6 +209,7 @@ pub fn pre_init_preprocessing(_app: &mut App, _analysis: &SyntaxAnalysis) -> par
     Ok(())
 }
 
+// ZAK note: call this from `pre_init`
 pub fn pre_init_checks(app: &App, _: &SyntaxAnalysis) -> Vec<TokenStream2> {
     let mut stmts = vec![];
 
@@ -224,6 +225,7 @@ pub fn pre_init_checks(app: &App, _: &SyntaxAnalysis) -> Vec<TokenStream2> {
     stmts
 }
 
+// ZAK note: call this from `pre_init`
 pub fn pre_init_enable_interrupts(app: &App, analysis: &CodegenAnalysis) -> Vec<TokenStream2> {
     let mut stmts = vec![];
 
@@ -287,6 +289,7 @@ pub fn pre_init_enable_interrupts(app: &App, analysis: &CodegenAnalysis) -> Vec<
     stmts
 }
 
+// ZAK NOTE: replaced by pre-code-gen validation
 pub fn architecture_specific_analysis(app: &App, _: &SyntaxAnalysis) -> parse::Result<()> {
     // Check that external (device-specific) interrupts are not named after known (Cortex-M)
     // exceptions

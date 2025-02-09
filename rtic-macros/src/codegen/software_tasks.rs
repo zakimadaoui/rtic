@@ -1,4 +1,5 @@
 use crate::syntax::{ast::App, Context};
+use crate::BackendBindings;
 use crate::{
     analyze::Analysis,
     codegen::{local_resources_struct, module, shared_resources_struct},
@@ -6,7 +7,7 @@ use crate::{
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
-pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> TokenStream2 {
     let mut mod_app = vec![];
     let mut root = vec![];
     let mut user_tasks = vec![];
@@ -51,7 +52,12 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
             ));
         }
 
-        root.push(module::codegen(Context::SoftwareTask(name), app, analysis));
+        root.push(module::codegen(
+            Context::SoftwareTask(name),
+            app,
+            analysis,
+            bindings,
+        ));
     }
 
     quote!(

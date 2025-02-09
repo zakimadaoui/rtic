@@ -12,7 +12,6 @@ use crate::syntax::ast::App;
 mod accessors;
 pub mod analyze;
 pub mod ast;
-mod backend;
 mod check;
 mod parse;
 

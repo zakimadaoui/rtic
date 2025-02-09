@@ -4,11 +4,11 @@ use quote::quote;
 use crate::{
     analyze::Analysis,
     codegen::{local_resources_struct, module},
-    syntax::{ast::App, Context},
+    syntax::{ast::App, Context}, BackendBindings,
 };
 
 /// Generates support code for `#[init]` functions
-pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> TokenStream2 {
     let init = &app.init;
     let name = &init.name;
 
@@ -93,7 +93,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
         mod_app = Some(constructor);
     }
 
-    root_init.push(module::codegen(Context::Init, app, analysis));
+    root_init.push(module::codegen(Context::Init, app, analysis, bindings));
 
     quote!(
         #mod_app

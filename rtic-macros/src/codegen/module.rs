@@ -1,10 +1,11 @@
 use crate::syntax::{ast::App, Context};
-use crate::{analyze::Analysis, codegen::bindings::interrupt_mod, codegen::util};
+use crate::BackendBindings;
+use crate::{analyze::Analysis, codegen::util};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 #[allow(clippy::too_many_lines)]
-pub fn codegen(ctxt: Context, app: &App, analysis: &Analysis) -> TokenStream2 {
+pub fn codegen(ctxt: Context, app: &App, analysis: &Analysis, bindings: &BackendBindings) -> TokenStream2 {
     let mut items = vec![];
     let mut module_items = vec![];
     let mut fields = vec![];
@@ -150,7 +151,7 @@ pub fn codegen(ctxt: Context, app: &App, analysis: &Analysis) -> TokenStream2 {
         task_cfgs.clone_from(cfgs);
 
         let pend_interrupt = if priority > 0 {
-            let int_mod = interrupt_mod(app);
+            let int_mod = bindings.core.interrupt_path(app);
             let interrupt = &analysis.interrupts.get(&priority).expect("UREACHABLE").0;
             quote!(rtic::export::pend(#int_mod::#interrupt);)
         } else {

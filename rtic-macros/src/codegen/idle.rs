@@ -1,4 +1,5 @@
 use crate::syntax::{ast::App, Context};
+use crate::BackendBindings;
 use crate::{
     analyze::Analysis,
     codegen::{local_resources_struct, module, shared_resources_struct},
@@ -7,7 +8,7 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 /// Generates support code for `#[idle]` functions
-pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> TokenStream2 {
     if let Some(idle) = &app.idle {
         let mut mod_app = vec![];
         let mut root_idle = vec![];
@@ -29,7 +30,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
             mod_app.push(constructor);
         }
 
-        root_idle.push(module::codegen(Context::Idle, app, analysis));
+        root_idle.push(module::codegen(Context::Idle, app, analysis, bindings));
 
         let attrs = &idle.attrs;
         let context = &idle.context;

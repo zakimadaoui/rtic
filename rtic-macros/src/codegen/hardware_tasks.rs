@@ -1,16 +1,14 @@
 use crate::syntax::{ast::App, Context};
+use crate::BackendBindings;
 use crate::{
     analyze::Analysis,
-    codegen::{
-        bindings::{interrupt_entry, interrupt_exit, handler_config},
-        local_resources_struct, module, shared_resources_struct,
-    },
+    codegen::{local_resources_struct, module, shared_resources_struct},
 };
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 /// Generate support code for hardware tasks (`#[exception]`s and `#[interrupt]`s)
-pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> TokenStream2 {
     let mut mod_app = vec![];
     let mut root = vec![];
     let mut user_tasks = vec![];
@@ -20,9 +18,13 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
         let priority = task.args.priority;
         let cfgs = &task.cfgs;
         let attrs = &task.attrs;
-        let entry_stmts = interrupt_entry(app, analysis);
-        let exit_stmts = interrupt_exit(app, analysis);
-        let config = handler_config(app, analysis, symbol.clone());
+        let entry_stmts = bindings
+            .core
+            .interrupt_entry_statements(app, analysis, None);
+        let exit_stmts = bindings.core.interrupt_exit_statements(app, analysis, None);
+        let config = bindings
+            .core
+            .interrupt_handler_config(app, analysis, symbol.clone());
 
         mod_app.push(quote!(
             #[allow(non_snake_case)]
@@ -31,7 +33,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
             #(#cfgs)*
             #(#config)*
             unsafe fn #symbol() {
-                #(#entry_stmts)*
+                #entry_stmts
 
                 const PRIORITY: u8 = #priority;
 
@@ -41,7 +43,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
                     )
                 });
 
-                #(#exit_stmts)*
+                #exit_stmts
             }
         ));
 
@@ -67,7 +69,12 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
 
         // Module generation...
 
-        root.push(module::codegen(Context::HardwareTask(name), app, analysis));
+        root.push(module::codegen(
+            Context::HardwareTask(name),
+            app,
+            analysis,
+            bindings,
+        ));
 
         // End module generation
 

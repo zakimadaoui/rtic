@@ -1,14 +1,15 @@
-use super::bindings::{pre_init_checks, pre_init_enable_interrupts};
 use crate::analyze::Analysis;
 use crate::syntax::ast::App;
+use crate::BackendBindings;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
 /// Generates code that runs before `#[init]`
-pub fn codegen(app: &App, analysis: &Analysis) -> Vec<TokenStream2> {
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> Vec<TokenStream2> {
     let mut stmts = vec![];
 
     // Disable interrupts -- `init` must run with interrupts disabled
+    // TODO: replace this with a backend method as we don't want dependency on hardware even on rtic::export
     stmts.push(quote!(rtic::export::interrupt::disable();));
 
     if app.args.core {
@@ -18,9 +19,9 @@ pub fn codegen(app: &App, analysis: &Analysis) -> Vec<TokenStream2> {
         ));
     }
 
-    stmts.append(&mut pre_init_checks(app, analysis));
-
-    stmts.append(&mut pre_init_enable_interrupts(app, analysis));
+    if let Some(pre_init) = bindings.core.pre_init(app, analysis) {
+        stmts.push(pre_init);
+    }
 
     stmts
 }

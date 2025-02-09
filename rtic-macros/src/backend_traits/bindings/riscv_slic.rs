@@ -228,6 +228,7 @@ pub fn handler_config(
     vec![]
 }
 
+/// ZAK NOTE: I belive this can be done in `generate_global_definitions` binding
 /// The SLIC requires us to call to the [`riscv_rtic::codegen`] macro to generate
 /// the appropriate SLIC structure, interrupt enumerations, etc.
 pub fn extra_modules(app: &App, _analysis: &SyntaxAnalysis) -> Vec<TokenStream2> {

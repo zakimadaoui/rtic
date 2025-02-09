@@ -1,22 +1,19 @@
-use crate::{
-    analyze::Analysis,
-    codegen::{bindings, util},
-    syntax::ast::App,
-};
+use crate::{analyze::Analysis, codegen::util, syntax::ast::App, BackendBindings};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
-use super::{assertions, extra_mods, post_init, pre_init};
+use super::{assertions, post_init, pre_init};
 
 /// Generates code for `fn main`
-pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
-    let extra_mods_stmts = extra_mods::codegen(app, analysis);
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> TokenStream2 {
+    let core_global_definitions = bindings.core.generate_global_definitions(app, analysis);
+    let sw_global_definitions = bindings.sw.generate_global_definitions(app, analysis);
 
-    let assertion_stmts = assertions::codegen(app, analysis);
+    let assertion_stmts = assertions::codegen(app, analysis, bindings);
 
-    let pre_init_stmts = pre_init::codegen(app, analysis);
+    let pre_init_stmts = pre_init::codegen(app, analysis, bindings);
 
-    let post_init_stmts = post_init::codegen(app, analysis);
+    let post_init_stmts = post_init::codegen(app, analysis, bindings);
 
     let call_idle = if let Some(idle) = &app.idle {
         let name = &idle.name;
@@ -50,10 +47,11 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
         quote!(executors_size)
     };
 
-    let msp_check = bindings::check_stack_overflow_before_init(app, analysis);
+    let msp_check = bindings.sw.check_stack_overflow_before_init(app, analysis);
 
     quote!(
-        #(#extra_mods_stmts)*
+        #core_global_definitions
+        #sw_global_definitions
 
         #[doc(hidden)]
         #[no_mangle]
@@ -71,7 +69,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
             let mut executors_size = 0;
             #(#executor_allocations)*
 
-            #(#msp_check)*
+            #msp_check
 
             // Wrap late_init_stmts in a function to ensure that stack space is reclaimed.
             __rtic_init_resources(||{

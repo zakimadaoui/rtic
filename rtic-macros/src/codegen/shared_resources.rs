@@ -1,12 +1,11 @@
 use crate::syntax::{analyze::Ownership, ast::App};
+use crate::BackendBindings;
 use crate::{analyze::Analysis, codegen::util};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 
-use super::bindings::impl_mutex;
-
 /// Generates `static` variables and shared resource proxies
-pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
+pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> TokenStream2 {
     let mut mod_app = vec![];
     let mut mod_resources = vec![];
 
@@ -19,7 +18,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
 
         // late resources in `util::link_section_uninit`
         // unless user specifies custom link section
-        let section = if attrs
+        let section: Option<TokenStream2> = if attrs
             .iter()
             .any(|attr| attr.path().is_ident("link_section"))
         {
@@ -79,7 +78,7 @@ pub fn codegen(app: &App, analysis: &Analysis) -> TokenStream2 {
             // For future use
             // let doc = format!(" RTIC internal ({} resource): {}:{}", doc, file!(), line!());
 
-            mod_app.push(impl_mutex(
+            mod_app.push(bindings.core.impl_mutex(
                 app,
                 analysis,
                 cfgs,
