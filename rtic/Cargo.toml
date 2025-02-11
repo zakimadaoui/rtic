@@ -53,17 +53,22 @@ trybuild = "1"
 
 [features]
 default = []
-thumbv6-backend = ["cortex-m", "rtic-macros/cortex-m-source-masking"]
-thumbv7-backend = ["cortex-m", "rtic-macros/cortex-m-basepri"]
-thumbv8base-backend = ["cortex-m", "rtic-macros/cortex-m-source-masking"]
-thumbv8main-backend = ["cortex-m", "rtic-macros/cortex-m-basepri"]
+# thumbv6-backend = ["cortex-m", "rtic-macros/cortex-m-source-masking"]
+# thumbv7-backend = ["cortex-m", "rtic-macros/cortex-m-basepri"]
+# thumbv8base-backend = ["cortex-m", "rtic-macros/cortex-m-source-masking"]
+# thumbv8main-backend = ["cortex-m", "rtic-macros/cortex-m-basepri"]
+# riscv-esp32c3-backend = ["esp32c3", "riscv", "rtic-macros/riscv-esp32c3"]
+thumbv6-backend = ["cortex-m"]
+thumbv7-backend = ["cortex-m"]
+thumbv8base-backend = ["cortex-m"]
+thumbv8main-backend = ["cortex-m"]
+riscv-esp32c3-backend = ["esp32c3", "riscv"]
 # riscv-clic-backend = ["rtic-macros/riscv-clic"]
 # riscv-ch32-backend = ["rtic-macros/riscv-ch32"]
-riscv-esp32c3-backend = ["esp32c3", "riscv", "rtic-macros/riscv-esp32c3"]
 riscv-clint-backend = [
   "riscv",
   "riscv-slic/clint-backend",
-  "rtic-macros/riscv-slic",
+  # "rtic-macros/riscv-slic",
 ]
 
 # needed for testing

@@ -9,20 +9,30 @@ mod codegen;
 mod syntax;
 
 use backend_traits::{CorePassBackend, SwPassBackend};
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use std::{env, fs, path::Path};
 
-struct BackendBindings {
+// TODO LIST
+// change all instances of rtic::export too !
+
+pub struct BackendBindings {
     core: Box<dyn CorePassBackend>,
     sw: Box<dyn SwPassBackend>,
 }
 
-// Used for mocking the API in testing
-#[doc(hidden)]
-#[proc_macro_attribute]
-pub fn mock_app(args: TokenStream, input: TokenStream) -> TokenStream {
-    if let Err(e) = syntax::parse(args, input) {
-        e.to_compile_error().into()
+impl BackendBindings {
+    pub fn new(core: impl CorePassBackend + 'static, sw: impl SwPassBackend + 'static) -> Self {
+        Self {
+            core: Box::new(core),
+            sw: Box::new(sw),
+        }
+    }
+}
+
+/// Used for mocking the API in testing
+pub fn run_mock_app(args: TokenStream, input: TokenStream) -> TokenStream {
+    if let Err(e) = syntax::parse2(args, input) {
+        e.to_compile_error()
     } else {
         "fn main() {}".parse().unwrap()
     }
@@ -35,15 +45,9 @@ pub fn mock_app(args: TokenStream, input: TokenStream) -> TokenStream {
 /// # Panics
 ///
 /// Should never panic, cargo feeds a path which is later converted to a string
-#[proc_macro_attribute]
-pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
-    let bindings = BackendBindings {
-        core: None.unwrap(),
-        sw: None.unwrap(),
-    };
-
-    let (mut app, analysis) = match syntax::parse(args, input) {
-        Err(e) => return e.to_compile_error().into(),
+pub fn run_macro(args: TokenStream, input: TokenStream, bindings: BackendBindings) -> TokenStream {
+    let (mut app, analysis) = match syntax::parse2(args, input) {
+        Err(e) => return e.to_compile_error(),
         Ok(x) => x,
     };
 
@@ -53,7 +57,7 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
         .pre_codegen_processing(&mut app, &analysis)
         .and_then(|_| bindings.sw.pre_codegen_processing(&mut app, &analysis));
     if let Err(e) = res {
-        return e.to_compile_error().into();
+        return e.to_compile_error();
     }
     let app = app;
     // App is not mutable after this point
@@ -64,7 +68,7 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
         .pre_codgen_validation(&app, &analysis)
         .and_then(|_| bindings.sw.pre_codgen_validation(&app, &analysis));
     if let Err(e) = res {
-        return e.to_compile_error().into();
+        return e.to_compile_error();
     }
 
     let analysis = analyze::app(analysis, &app);
@@ -112,5 +116,5 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
         fs::write(format!("{out_str}/rtic-expansion.rs"), ts.to_string()).ok();
     }
 
-    ts.into()
+    ts
 }

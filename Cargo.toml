@@ -4,6 +4,7 @@ default-members = [
     "rtic-sync",
     "rtic-common",
     "rtic-macros",
+    "rtic-macros/rtic-macros-ui-tests",
     "rtic-monotonics",
     "rtic-time",
 ]
@@ -12,6 +13,7 @@ members = [
     "rtic-sync",
     "rtic-common",
     "rtic-macros",
+    "rtic-macros/rtic-macros-ui-tests",
     "rtic-monotonics",
     "rtic-time",
     "xtask",

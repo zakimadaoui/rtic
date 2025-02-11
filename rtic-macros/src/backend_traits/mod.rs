@@ -163,14 +163,14 @@ pub trait CorePassBackend: RticBackendBase {
     ///
     /// ## Debugging Tip
     /// Use ```eprintln("{}", incomplete_lock_fn.to_tokenstream().to_string())``` to see the `incomplete_lock_fn` signature and already provided logic inside it.
-    // fn generate_resource_proxy_lock_impl(
-    //     &self,
-    //     app: &App,
-    //     incomplete_lock_fn: syn::ImplItemFn,
-    // ) -> syn::ImplItemFn;
-
+    /// fn generate_resource_proxy_lock_impl(
+    ///     &self,
+    ///     app: &App,
+    ///     incomplete_lock_fn: syn::ImplItemFn,
+    /// ) -> syn::ImplItemFn;
     /// TODO: Tentative backend trait function for Generateing a `Mutex` implementation
     /// In next commits/iterations some efforts are needed to replace this with `generate_resource_proxy_lock_impl` method like experimented with in the MMRTIC project
+    #[allow(clippy::too_many_arguments)]
     fn impl_mutex(
         &self,
         app: &App,

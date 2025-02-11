@@ -1,8 +1,6 @@
 #[allow(unused_extern_crates)]
 extern crate proc_macro;
 
-use proc_macro::TokenStream;
-
 use indexmap::{IndexMap, IndexSet};
 use proc_macro2::TokenStream as TokenStream2;
 use syn::Ident;
@@ -90,14 +88,6 @@ impl<'a> Context<'a> {
             }
         }
     }
-}
-
-/// Parses the input of the `#[app]` attribute
-pub fn parse(
-    args: TokenStream,
-    input: TokenStream,
-) -> Result<(ast::App, analyze::Analysis), syn::parse::Error> {
-    parse2(args.into(), input.into())
 }
 
 /// `proc_macro2::TokenStream` version of `parse`
