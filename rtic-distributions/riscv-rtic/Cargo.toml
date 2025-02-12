@@ -16,11 +16,14 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 rtic-app-macro = { path = "rtic-app-macro" }
-cortex-m = { version = "0.7.0" }
+riscv-slic = { version = "0.1.1" }
+esp32c3 = { version = "0.26.0" }
+riscv = { version = "0.12.1" }
+portable-atomic = { version = "1" }
 critical-section = "1"
 
 
 [features]
 default = []
-cortex-m-basepri = ["rtic-app-macro/cortex-m-basepri"]
-cortex-m-source-masking = ["rtic-app-macro/cortex-m-source-masking"]
+riscv-esp32c3 = ["rtic-app-macro/riscv-esp32c3"]
+riscv-riscv-slic = ["rtic-app-macro/riscv-slic"]

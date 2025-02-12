@@ -106,11 +106,9 @@ dependencies = [
 name = "cortex-m-rtic"
 version = "2.0.0"
 dependencies = [
- "proc-macro-error2",
- "proc-macro2",
- "quote",
- "rtic-macros",
- "syn 2.0.50",
+ "cortex-m",
+ "critical-section",
+ "rtic-app-macro",
 ]
 
 [[package]]
@@ -456,11 +454,21 @@ name = "rtic"
 version = "2.1.2"
 dependencies = [
  "bare-metal 1.0.0",
- "cortex-m",
  "cortex-m-rtic",
  "critical-section",
  "portable-atomic",
  "rtic-core",
+]
+
+[[package]]
+name = "rtic-app-macro"
+version = "2.0.0"
+dependencies = [
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "rtic-macros",
+ "syn 2.0.50",
 ]
 
 [[package]]

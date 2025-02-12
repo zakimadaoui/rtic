@@ -37,7 +37,7 @@ pub use rtic_core::{prelude as mutex_prelude, Exclusive, Mutex};
 // pub use rtic_macros::app;
 #[cfg(feature = "cortex-m")]
 pub use cortex_m_rtic::app;
-#[cfg(feature = ""riscv"")]
+#[cfg(feature = "riscv")]
 pub use riscv_rtic::app;
 
 /// module `mutex::prelude` provides `Mutex` and multi-lock variants. Recommended over `mutex_prelude`

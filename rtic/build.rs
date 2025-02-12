@@ -20,15 +20,19 @@ fn main() {
     match backend.as_str() {
         "thumbv6-backend" | "thumbv8base-backend" => {
             println!("cargo:rustc-cfg=feature=\"cortex-m-source-masking\"");
+            println!("cargo:rustc-cfg=feature=\"cortex-m\"");
         }
         "thumbv7-backend" | "thumbv8main-backend" => {
             println!("cargo:rustc-cfg=feature=\"cortex-m-basepri\"");
+            println!("cargo:rustc-cfg=feature=\"cortex-m\"");
         }
         "riscv-esp32c3-backend" => {
             println!("cargo:rustc-cfg=feature=\"riscv-esp32c3\"");
+            println!("cargo:rustc-cfg=feature=\"riscv\"");
         }
         "riscv-clint-backend" => {
             println!("cargo:rustc-cfg=feature=\"riscv-slic\"");
+            println!("cargo:rustc-cfg=feature=\"riscv\"");
         }
         _ => {
             panic!("Unknown backend feature: {:?}", backend);

@@ -16,11 +16,8 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 rtic-app-macro = { path = "rtic-app-macro" }
-cortex-m = { version = "0.7.0" }
 critical-section = "1"
 
 
 [features]
 default = []
-cortex-m-basepri = ["rtic-app-macro/cortex-m-basepri"]
-cortex-m-source-masking = ["rtic-app-macro/cortex-m-source-masking"]
