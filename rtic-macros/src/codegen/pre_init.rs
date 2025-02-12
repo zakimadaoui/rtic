@@ -19,9 +19,7 @@ pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> Ve
         ));
     }
 
-    if let Some(pre_init) = bindings.core.pre_init(app, analysis) {
-        stmts.push(pre_init);
-    }
+    stmts.extend(bindings.core.pre_init(app, analysis));
 
     stmts
 }

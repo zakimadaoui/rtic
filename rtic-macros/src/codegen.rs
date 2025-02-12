@@ -18,7 +18,7 @@ mod pre_init;
 mod shared_resources;
 mod shared_resources_struct;
 mod software_tasks;
-mod util;
+pub mod util;
 
 mod main;
 

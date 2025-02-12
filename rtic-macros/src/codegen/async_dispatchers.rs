@@ -31,7 +31,7 @@ pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> To
         };
 
         let pend_interrupt = if level > 0 {
-            let int_mod = bindings.sw.interrupt_path(app);
+            let int_mod = bindings.sw.interrupt_path(app.args.device.clone());
 
             quote!(rtic::export::pend(#int_mod::#dispatcher_name);)
         } else {
@@ -61,15 +61,15 @@ pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> To
         if level > 0 {
             let doc = format!("Interrupt handler to dispatch async tasks at priority {level}");
             let attribute = &interrupts.get(&level).expect("UNREACHABLE").1.attrs;
-            let entry_stmts = bindings.sw.interrupt_entry_statements(
+            let entry_stmts = bindings.core.interrupt_entry_statements(
                 app,
                 analysis,
                 Some(dispatcher_name.clone()),
             );
-            let exit_stmts = bindings.sw.interrupt_exit_statements(app, analysis, None);
+            let exit_stmts = bindings.core.interrupt_exit_statements(app, analysis, None);
             let config =
                 bindings
-                    .sw
+                    .core
                     .interrupt_handler_config(app, analysis, dispatcher_name.clone());
             items.push(quote!(
                 #[allow(non_snake_case)]

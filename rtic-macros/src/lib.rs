@@ -8,20 +8,22 @@ mod backend_traits;
 mod codegen;
 mod syntax;
 
-use backend_traits::{CorePassBackend, SwPassBackend};
+pub use analyze::Analysis;
+pub use backend_traits::{HwPassBackend, RticBackendBase, SwPassBackend};
+pub use codegen::util as codegen_utils;
+pub use syntax::analyze::Analysis as SyntaxAnalysis;
+pub use syntax::ast;
+
 use proc_macro2::TokenStream;
 use std::{env, fs, path::Path};
 
-// TODO LIST
-// change all instances of rtic::export too !
-
 pub struct BackendBindings {
-    core: Box<dyn CorePassBackend>,
+    core: Box<dyn HwPassBackend>,
     sw: Box<dyn SwPassBackend>,
 }
 
 impl BackendBindings {
-    pub fn new(core: impl CorePassBackend + 'static, sw: impl SwPassBackend + 'static) -> Self {
+    pub fn new(core: impl HwPassBackend + 'static, sw: impl SwPassBackend + 'static) -> Self {
         Self {
             core: Box::new(core),
             sw: Box::new(sw),

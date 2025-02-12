@@ -39,16 +39,13 @@ pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> Ve
             ));
         }
     }
-    
-    if let Some(post_init) = bindings.core.post_init(app, analysis) {
-        stmts.push(post_init);
-    }
+
+    stmts.extend(bindings.core.post_init(app, analysis));
 
     // TODO: replace this with a binding for enabling interrupts
     // Enable the interrupts -- this completes the `init`-ialization phase
     // or ask this to be part of `post_init` binding
     stmts.push(quote!(rtic::export::interrupt::enable();));
-
 
     stmts
 }

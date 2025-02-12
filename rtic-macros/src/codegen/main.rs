@@ -69,7 +69,7 @@ pub fn codegen(app: &App, analysis: &Analysis, bindings: &BackendBindings) -> To
             let mut executors_size = 0;
             #(#executor_allocations)*
 
-            #msp_check
+            #(#msp_check)*
 
             // Wrap late_init_stmts in a function to ensure that stack space is reclaimed.
             __rtic_init_resources(||{

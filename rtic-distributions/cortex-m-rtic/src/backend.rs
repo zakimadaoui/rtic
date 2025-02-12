@@ -1,17 +1,155 @@
-use crate::{
-    analyze::Analysis as CodegenAnalysis,
-    codegen::util,
-    syntax::{analyze::Analysis as SyntaxAnalysis, ast::App},
-};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
+use rtic_macros::{ast::App, codegen_utils as util, Analysis as CodegenAnalysis, SyntaxAnalysis};
 use std::collections::HashSet;
-use syn::{parse, Attribute, Ident};
+use syn::{parse, parse_quote, Ident};
 
 #[cfg(feature = "cortex-m-basepri")]
 pub use basepri::*;
 #[cfg(feature = "cortex-m-source-masking")]
 pub use source_masking::*;
+
+pub struct CortexCorePass;
+pub struct CortexSwPass;
+
+impl rtic_macros::RticBackendBase for CortexCorePass {
+    fn interrupt_path(&self, device: syn::Path) -> syn::Path {
+        let interrupt = interrupt_ident();
+        parse_quote!(#device::#interrupt)
+    }
+}
+impl rtic_macros::RticBackendBase for CortexSwPass {
+    fn interrupt_path(&self, device: syn::Path) -> syn::Path {
+        let interrupt = interrupt_ident();
+        parse_quote!(#device::#interrupt)
+    }
+}
+
+impl rtic_macros::HwPassBackend for CortexCorePass {
+    fn pre_init(&self, app: &App, analysis: &CodegenAnalysis) -> Vec<TokenStream2> {
+        let mut statements = Vec::new();
+
+        statements.extend(pre_init_checks(app, analysis));
+        statements.extend(pre_init_enable_interrupts(app, analysis));
+        statements
+    }
+
+    fn post_init(&self, _app: &App, _analysis: &CodegenAnalysis) -> Vec<TokenStream2> {
+        vec![]
+    }
+
+    fn impl_mutex(
+        &self,
+        app: &App,
+        analysis: &CodegenAnalysis,
+        cfgs: &[syn::Attribute],
+        resources_prefix: bool,
+        name: &syn::Ident,
+        ty: &TokenStream2,
+        ceiling: u8,
+        ptr: &TokenStream2,
+    ) -> TokenStream2 {
+        impl_mutex(
+            app,
+            analysis,
+            cfgs,
+            resources_prefix,
+            name,
+            ty,
+            ceiling,
+            ptr,
+        )
+    }
+
+    fn interrupt_entry_statements(
+        &self,
+        _app: &App,
+        _analysis: &CodegenAnalysis,
+        _handler: Option<syn::Ident>,
+    ) -> Option<TokenStream2> {
+        None
+    }
+
+    fn interrupt_exit_statements(
+        &self,
+        _app: &App,
+        _analysis: &CodegenAnalysis,
+        _handler: Option<syn::Ident>,
+    ) -> Option<TokenStream2> {
+        None
+    }
+
+    fn interrupt_handler_config(
+        &self,
+        _app: &App,
+        _analysis: &CodegenAnalysis,
+        _dispatcher_name: syn::Ident,
+    ) -> Vec<syn::Attribute> {
+        vec![]
+    }
+
+    fn pre_codgen_validation(&self, app: &App, analysis: &SyntaxAnalysis) -> syn::Result<()> {
+        architecture_specific_analysis(app, analysis)
+    }
+
+    fn pre_codegen_processing(
+        &self,
+        _app: &mut App,
+        _analysis: &SyntaxAnalysis,
+    ) -> syn::Result<()> {
+        Ok(())
+    }
+
+    fn generate_global_definitions(
+        &self,
+        _app: &App,
+        _analysis: &CodegenAnalysis,
+    ) -> Option<TokenStream2> {
+        None
+    }
+
+    fn extra_assertions(&self, _app: &App, _analysis: &SyntaxAnalysis) -> Vec<TokenStream2> {
+        vec![]
+    }
+}
+
+impl rtic_macros::SwPassBackend for CortexSwPass {
+    fn async_prio_limit(&self, app: &App, analysis: &CodegenAnalysis) -> Vec<TokenStream2> {
+        async_prio_limit(app, analysis)
+    }
+
+    fn check_stack_overflow_before_init(
+        &self,
+        app: &App,
+        analysis: &CodegenAnalysis,
+    ) -> Vec<TokenStream2> {
+        check_stack_overflow_before_init(app, analysis)
+    }
+
+    fn generate_global_definitions(
+        &self,
+        _app: &App,
+        _analysis: &CodegenAnalysis,
+    ) -> Option<TokenStream2> {
+        None
+    }
+
+    fn pre_codgen_validation(&self, _app: &App, _analysis: &SyntaxAnalysis) -> syn::Result<()> {
+        Ok(())
+    }
+
+    fn pre_codegen_processing(
+        &self,
+        _app: &mut App,
+        _analysis: &SyntaxAnalysis,
+    ) -> syn::Result<()> {
+        Ok(())
+    }
+
+    fn extra_assertions(&self, _app: &App, _analysis: &SyntaxAnalysis) -> Vec<TokenStream2> {
+        vec![]
+    }
+}
 
 /// Whether `name` is an exception with configurable priority
 fn is_exception(name: &Ident) -> bool {
@@ -33,12 +171,6 @@ fn is_exception(name: &Ident) -> bool {
 pub fn interrupt_ident() -> Ident {
     let span = Span::call_site();
     Ident::new("interrupt", span)
-}
-
-pub fn interrupt_mod(app: &App) -> TokenStream2 {
-    let device = &app.args.device;
-    let interrupt = interrupt_ident();
-    quote!(#device::#interrupt)
 }
 
 pub fn check_stack_overflow_before_init(
@@ -68,6 +200,7 @@ pub fn check_stack_overflow_before_init(
 mod source_masking {
     use super::*;
     use std::collections::HashMap;
+    use syn::Attribute;
 
     /// Generates a `Mutex` implementation
     #[allow(clippy::too_many_arguments)]
@@ -148,15 +281,12 @@ mod source_masking {
             }
         )
     }
-
-    pub fn extra_assertions(_: &App, _: &SyntaxAnalysis) -> Vec<TokenStream2> {
-        vec![]
-    }
 }
 
 #[cfg(feature = "cortex-m-basepri")]
 mod basepri {
     use super::*;
+    use syn::Attribute;
 
     /// Generates a `Mutex` implementation
     #[allow(clippy::too_many_arguments)]
@@ -199,17 +329,8 @@ mod basepri {
             }
         )
     }
-
-    pub fn extra_assertions(_: &App, _: &SyntaxAnalysis) -> Vec<TokenStream2> {
-        vec![]
-    }
 }
 
-pub fn pre_init_preprocessing(_app: &mut App, _analysis: &SyntaxAnalysis) -> parse::Result<()> {
-    Ok(())
-}
-
-// ZAK note: call this from `pre_init`
 pub fn pre_init_checks(app: &App, _: &SyntaxAnalysis) -> Vec<TokenStream2> {
     let mut stmts = vec![];
 
@@ -225,7 +346,6 @@ pub fn pre_init_checks(app: &App, _: &SyntaxAnalysis) -> Vec<TokenStream2> {
     stmts
 }
 
-// ZAK note: call this from `pre_init`
 pub fn pre_init_enable_interrupts(app: &App, analysis: &CodegenAnalysis) -> Vec<TokenStream2> {
     let mut stmts = vec![];
 
@@ -289,7 +409,6 @@ pub fn pre_init_enable_interrupts(app: &App, analysis: &CodegenAnalysis) -> Vec<
     stmts
 }
 
-// ZAK NOTE: replaced by pre-code-gen validation
 pub fn architecture_specific_analysis(app: &App, _: &SyntaxAnalysis) -> parse::Result<()> {
     // Check that external (device-specific) interrupts are not named after known (Cortex-M)
     // exceptions
@@ -356,22 +475,6 @@ pub fn architecture_specific_analysis(app: &App, _: &SyntaxAnalysis) -> parse::R
     Ok(())
 }
 
-pub fn interrupt_entry(_app: &App, _analysis: &CodegenAnalysis) -> Vec<TokenStream2> {
-    vec![]
-}
-
-pub fn interrupt_exit(_app: &App, _analysis: &CodegenAnalysis) -> Vec<TokenStream2> {
-    vec![]
-}
-
-pub fn async_entry(
-    _app: &App,
-    _analysis: &CodegenAnalysis,
-    _dispatcher_name: Ident,
-) -> Vec<TokenStream2> {
-    vec![]
-}
-
 pub fn async_prio_limit(app: &App, analysis: &CodegenAnalysis) -> Vec<TokenStream2> {
     let max = if let Some(max) = analysis.max_async_prio {
         quote!(#max)
@@ -386,15 +489,4 @@ pub fn async_prio_limit(app: &App, analysis: &CodegenAnalysis) -> Vec<TokenStrea
         #[no_mangle]
         static RTIC_ASYNC_MAX_LOGICAL_PRIO: u8 = #max;
     )]
-}
-pub fn handler_config(
-    _app: &App,
-    _analysis: &CodegenAnalysis,
-    _dispatcher_name: Ident,
-) -> Vec<TokenStream2> {
-    vec![]
-}
-
-pub fn extra_modules(_app: &App, _analysis: &SyntaxAnalysis) -> Vec<TokenStream2> {
-    vec![]
 }
